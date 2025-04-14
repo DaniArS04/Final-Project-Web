@@ -5,6 +5,16 @@ from rest_framework.authtoken.models import Token
 from App.models import User, Card
 from .serializers import UserSerializer, CardSerializer, CategorySerializer, SignUpSerializer, LoginSerializer, UserLoginSerializer
 
+
+# Vista para mostrar todas las flashcards
+def flashcards_view(request):
+    # Obtiene todas las flashcards de la base de datos
+    flashcards = Card.objects.all()
+    
+    # Pasa las flashcards a la plantilla para que se muestren
+    return render(request, 'flashcards.html', {'flashcards': flashcards})
+
+
 class SignUpView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
