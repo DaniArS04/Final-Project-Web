@@ -2,8 +2,7 @@ from django.db import models
 
 
 class Category(models.Model):
-    # el campo "id" se crea solo como primary key
-    category_name = models.CharField(max_length=100)
+    category_name = models.CharField(max_length=100, primary_key=True)
 
     def __str__(self):
         return self.category_name
@@ -31,8 +30,6 @@ class User(models.Model):
     last_name= models.CharField(max_length=150)
     email = models.EmailField(unique=True)
     password= models.CharField(max_length=128)
-    # Relación ManyToMany para las tarjetas favoritas de cada usuario
-    favorites_cards= models.ManyToManyField('Card', blank=True, related_name='favorites_for')
 
     def __str__(self):
         return self.username

@@ -30,7 +30,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'FlashcardP',
     'App',
-    # 'corsheaders',
+    'corsheaders',
 ]
 
 REST_FRAMEWORK = {
@@ -47,10 +47,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'corsheaders.middleware.CorsMiddleware'
+    'corsheaders.middleware.CorsMiddleware'
 ]
 
-# CORS_ALLOWED_ORIGINS = ['http://localhost:3000']  # Dominio del frontend
+CORS_ALLOWED_ORIGINS = ['http://localhost:4200']  # Dominio del frontend
 
 ROOT_URLCONF = 'FlashcardP.urls'
 
