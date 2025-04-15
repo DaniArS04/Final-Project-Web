@@ -1,7 +1,7 @@
 
 from django.contrib import admin
 from django.urls import path, include
-from App.views import SignUpView, LoginView, get_flashcards, login, signup, CustomLoginView
+from App.views import SignUpView, LoginView, get_flashcards, login, signup, CustomLoginView, CustomSignupView, ValidateCompleteNameView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -12,6 +12,8 @@ urlpatterns = [
     path('login_status/', login, name='login'),
     path('signup_status/', signup, name='signup'),
     path('api/login/', CustomLoginView.as_view(), name='custom_login'),
+    path('api/signup/', CustomSignupView.as_view(), name='custom_signup'),
+    path('api/validate-complete-name/', ValidateCompleteNameView.as_view(), name='validate_complete_name'),
 
 ]
 
