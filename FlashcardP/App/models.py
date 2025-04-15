@@ -7,7 +7,7 @@ class Category(models.Model):
     def __str__(self):
         return self.category_name
 
-# se cambio de aqui el atributo favoritos xq ya se hace funcion en el manytomany
+
 class Card(models.Model):
     DIFFICULTIES = [
         ('easy', 'Easy'),
