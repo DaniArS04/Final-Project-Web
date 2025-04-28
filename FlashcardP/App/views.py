@@ -8,8 +8,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from App.models import User, Card
 from .serializers import UserSerializer, CardSerializer, CategorySerializer, SignUpSerializer, LoginSerializer, UserLoginSerializer
 
-# Maneja la obtencion de todas las cartas a traves de una solicitud GET: http://127.0.0.1:8000/api/cards/flashcards//
-class FlashcardList(View):
+# Maneja la obtencion de todas las cartas a traves de una solicitud GET: http://127.0.0.1:8000/api/cards/flashcards/
+class FlashcardListView(View):
     def get(self, request):
         try:
             flashcards = Card.objects.all().values(
@@ -35,14 +35,8 @@ class FlashcardList(View):
                 status=500
             )
 
-    def post(self, request):
-        return JsonResponse(
-            {'error': 'Method not allowed'}, 
-            status=405
-        )
-
 # Maneja el registro de usuarios a traves de una solicitud POST: http://127.0.0.1:8000/api/users/signup/
-class Signup(APIView):
+class SignupView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             # Obtener los datos del cuerpo de la solicitud
@@ -77,9 +71,8 @@ class Signup(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 # Maneja el inicio de seccion del usuario a traves de una solicitud GET: http://127.0.0.1:8000/api/users/login/
-class Login(APIView):
+class LoginView(APIView):
     def get(self, request, *args, **kwargs):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -101,11 +94,11 @@ class Login(APIView):
 def process_full_name(full_name):
     name_parts = full_name.split(" ", 1)  # Separa solo en el primer espacio
     name = name_parts[0]
-    last_name = name_parts[1] if len(name_parts) > 1 else ""  # Si no hay apellido, se deja vacío
+    last_name = name_parts[1] if len(name_parts) > 1 else ""  # Si no hay apellido, se deja vacio
     return name, last_name
 
 # Maneja una solicitud POST donde se separa el nombre del apellido para agg en la BD: http://127.0.0.1:8000/api/users/validate-name/ 
-class ValidateCompleteName(APIView):
+class ValidateCompleteNameView(APIView):
     def post(self, request, *args, **kwargs):
         complete_name = request.data.get("complete_name", "").strip()
 
@@ -121,7 +114,7 @@ class ValidateCompleteName(APIView):
         }, status=status.HTTP_200_OK)
 
 # Maneja la eliminacion de un usuario a traves de una solicitud DELETE: http://127.0.0.1:8000/api/users/delete-user/
-class DeleteUser(APIView):
+class DeleteUserView(APIView):
     def delete(self, request, username):
         try:
             user = User.objects.get(pk=username)
@@ -132,7 +125,7 @@ class DeleteUser(APIView):
         
 
 # Maneja la creacion de cartas a traves de una solicitud POST http://127.0.0.1:8000/api/cards/create/
-class CardCreate(generics.CreateAPIView):
+class CardCreateView(generics.CreateAPIView):
     queryset = Card.objects.all()
     serializer_class = CardSerializer
     permission_classes = [permissions.IsAuthenticated]  # Solo usuarios autenticados
