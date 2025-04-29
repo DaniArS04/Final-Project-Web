@@ -61,7 +61,7 @@ class SignupView(APIView):
 class LoginView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = UserLoginSerializer(data=request.data)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             user = serializer.validated_data["user"]
             
             # Generar tokens JWT
