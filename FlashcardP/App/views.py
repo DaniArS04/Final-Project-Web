@@ -1,12 +1,12 @@
 
 from django.http import JsonResponse
 from django.contrib.auth.models import User
-from rest_framework.views import APIView, View
-from rest_framework import status, generics, permissions
+from rest_framework.views import APIView
+from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from App.models import User, Card
-from .serializers import UserSerializer, CardSerializer, CategorySerializer, SignUpSerializer, LoginSerializer, UserLoginSerializer
+from .serializers import  CardSerializer, UserLoginSerializer
 
 # Maneja la obtencion de todas las cartas a traves de una solicitud GET: http://127.0.0.1:8000/api/cards/flashcards/
 class FlashcardListView(APIView):
@@ -48,11 +48,11 @@ class SignupView(APIView):
 
             # Validar que todos los campos esten presentes
             if not username or not name or not last_name or not email or not password:
-                return Response({'error': 'All fields are mandatory'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'All fields are mandatory.'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Verificar si el usuario ya existe
             if User.objects.filter(username=username).exists():
-                return Response({'error': 'The user already exists'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'The user already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Crear un nuevo usuario
             user = User.objects.create_user(username=username, name=name, last_name=last_name, email=email, password=password)
@@ -61,7 +61,7 @@ class SignupView(APIView):
             # Generar tokens JWT
             refresh = RefreshToken.for_user(user)
             return Response({
-                'message': 'Successfully registered user',
+                'message': 'Successfully registered user.',
                 'tokens': {
                     'refresh': str(refresh),
                     'access': str(refresh.access_token),
@@ -74,7 +74,7 @@ class SignupView(APIView):
 # Maneja el inicio de seccion del usuario a traves de una solicitud POST: http://127.0.0.1:8000/api/users/login/
 class LoginView(APIView):
     def post(self, request, *args, **kwargs):
-        serializer = LoginSerializer(data=request.data)
+        serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data["user"]
             

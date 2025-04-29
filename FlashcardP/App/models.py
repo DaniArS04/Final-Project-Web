@@ -19,15 +19,15 @@ class Card(models.Model):
     answer = models.TextField()
     difficulty = models.CharField(max_length=300, choices=DIFFICULTIES)
     category = models.ForeignKey(Category, on_delete=models.CASCADE) # si se elimina una categoria se eliminan las tarjetas asociadas a ella
-    owner = models.ForeignKey('User', on_delete=models.CASCADE, related_name='cards')
+    owner = models.ForeignKey('User', on_delete=models.CASCADE, related_name='cards', default=1)
 
     def __str__(self):
         return self.question
 
 class User(models.Model):
-    username = models.CharField(max_length=150, primary_key=True)
     name = models.CharField(max_length=150)
     last_name= models.CharField(max_length=150)
+    username = models.CharField(max_length=150, primary_key=True)
     email = models.EmailField(unique=True)
     password= models.CharField(max_length=128)
 

@@ -39,7 +39,7 @@ class SignUpSerializer(serializers.ModelSerializer):
         
         # Al menos un numero
         if not re.search(r'[0-9]', value):
-            raise s
+            raise 
         return value
 
     def create(self, validated_data):
@@ -47,9 +47,7 @@ class SignUpSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 class LoginSerializer(serializers.Serializer):
-    full_name = serializers.CharField(max_length=300)
     username = serializers.CharField(max_length=150)
-    email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
