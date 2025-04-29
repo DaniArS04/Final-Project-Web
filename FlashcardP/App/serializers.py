@@ -2,6 +2,8 @@
 import re
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth import authenticate 
+from django.contrib.auth import get_user_model
 from App.models import User, Card, Category
 
 class UserSerializer(serializers.ModelSerializer):
@@ -70,22 +72,21 @@ class LoginSerializer(serializers.Serializer):
         data['user'] = user
         return data
 
+User = get_user_model()
 
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'}) 
 
     def validate(self, data):
         username = data.get("username")
         password = data.get("password")
 
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User not found.")
+        # Para mayor seguridad
+        user = authenticate(username=username, password=password)
 
-        if not check_password(password, user.password):
-            raise serializers.ValidationError("Incorrect password")
+        if not user:
+            raise serializers.ValidationError("Invalid credentials.")
 
         data["user"] = user
         return data

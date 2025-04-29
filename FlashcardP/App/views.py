@@ -40,9 +40,9 @@ class SignupView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             # Obtener los datos del cuerpo de la solicitud
-            username = request.data.get('username')
             name = request.data.get('name')
             last_name = request.data.get('last_name')
+            username = request.data.get('username')
             email = request.data.get('email')
             password = request.data.get('password')
 
@@ -73,7 +73,7 @@ class SignupView(APIView):
 
 # Maneja el inicio de seccion del usuario a traves de una solicitud POST: http://127.0.0.1:8000/api/users/login/
 class LoginView(APIView):
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data["user"]
@@ -115,7 +115,7 @@ class ValidateCompleteNameView(APIView):
 
 # Maneja la eliminacion de un usuario a traves de una solicitud DELETE: http://127.0.0.1:8000/api/users/delete-user/
 class DeleteUserView(APIView):
-    def delete(self, request, username):
+    def delete(self, username):
         try:
             user = User.objects.get(pk=username)
             user.delete()
