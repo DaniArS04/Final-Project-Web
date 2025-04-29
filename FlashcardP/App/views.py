@@ -1,79 +1,65 @@
 
-from django.http import JsonResponse
+from django.forms import ValidationError
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from App.models import User, Card
-from .serializers import  CardSerializer, UserLoginSerializer
+from .serializers import  CardSerializer, UserLoginSerializer, SignupSerializer
 
-# Maneja la obtencion de todas las cartas a traves de una solicitud GET: http://127.0.0.1:8000/api/cards/flashcards/
+# Maneja la obtencion de todas las cartas a traves de una solicitud GET: http://127.0.0.1:8000/api/auth/flashcards/
 class FlashcardListView(APIView):
     def get(self, request):
         try:
-            flashcards = Card.objects.all().values(
-                'card_id',
-                'question',
-                'answer',
-                'difficulty',
-                'category',
-                'owner'
-            )
+            flashcards = Card.objects.all()
             
-            if not flashcards:
-                return JsonResponse(
+            if not flashcards.exists():
+                return Response(
                     {'error': 'No flashcards available'}, 
-                    status=404
+                    status=status.HTTP_404_NOT_FOUND
                 )
-                
-            return JsonResponse(list(flashcards), safe=False)
+            
+            serializer = CardSerializer(flashcards, many=True)
+            return Response(serializer.data)
             
         except Exception as e:
-            return JsonResponse(
-                {'error': str(e)}, 
-                status=500
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-# Maneja el registro de usuarios a traves de una solicitud POST: http://127.0.0.1:8000/api/users/signup/
+# Maneja el registro de usuarios a traves de una solicitud POST: http://127.0.0.1:8000/api/auth/signup/
 class SignupView(APIView):
     def post(self, request, *args, **kwargs):
-        try:
-            # Obtener los datos del cuerpo de la solicitud
-            name = request.data.get('name')
-            last_name = request.data.get('last_name')
-            username = request.data.get('username')
-            email = request.data.get('email')
-            password = request.data.get('password')
+        serializer = SignupSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            try:
+                user = serializer.save()
+                
+                # Generar tokens JWT
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'message': 'Successfully registered user',
+                    'tokens': {
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                    }
+                }, status=status.HTTP_201_CREATED)
+            
+            except ValidationError as e:
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Manejar errores de validación del serializer
+        return Response({
+            'error': 'Validation error',
+            'details': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Validar que todos los campos esten presentes
-            if not username or not name or not last_name or not email or not password:
-                return Response({'error': 'All fields are mandatory.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Verificar si el usuario ya existe
-            if User.objects.filter(username=username).exists():
-                return Response({'error': 'The user already exists.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Crear un nuevo usuario
-            user = User.objects.create_user(username=username, name=name, last_name=last_name, email=email, password=password)
-            user.save()
-
-            # Generar tokens JWT
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'message': 'Successfully registered user.',
-                'tokens': {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                }
-            }, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-# Maneja el inicio de seccion del usuario a traves de una solicitud POST: http://127.0.0.1:8000/api/users/login/
+# Maneja el inicio de seccion del usuario a traves de una solicitud POST: http://127.0.0.1:8000/api/auth/login/
 class LoginView(APIView):
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data["user"]
@@ -115,7 +101,7 @@ class ValidateCompleteNameView(APIView):
 
 # Maneja la eliminacion de un usuario a traves de una solicitud DELETE: http://127.0.0.1:8000/api/users/delete-user/
 class DeleteUserView(APIView):
-    def delete(self, username):
+    def delete(self, request, username):
         try:
             user = User.objects.get(pk=username)
             user.delete()

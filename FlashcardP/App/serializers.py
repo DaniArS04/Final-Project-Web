@@ -1,9 +1,11 @@
 
-import re
+
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth import authenticate 
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from App.models import User, Card, Category
 
 class UserSerializer(serializers.ModelSerializer):
@@ -13,6 +15,8 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
 class CardSerializer(serializers.ModelSerializer):
+    owner = UserSerializer(read_only=True)
+
     class Meta:
         model = Card
         fields = '__all__'
@@ -22,32 +26,39 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
-class SignUpSerializer(serializers.ModelSerializer):
+# Serializador para el registro
+class SignupSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+        validators=[validate_password]
+    )
+
     class Meta:
         model = User
-        fields = ('username', 'name', 'last_name', 'email', 'password')
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = ['name', 'last_name', 'username', 'email', 'password']
+        extra_kwargs = {
+            'name': {'required': True},
+            'last_name': {'required': True},
+            'email': {'required': True},
+        }
 
-    
-# Si no cumplen los requisitos, se lanza un error con un mensaje visible desde el frontend.
-    def validate_password(self, value):
-        # Mmnimo 8 caracteres
-        if len(value) < 8:
-            raise serializers.ValidationError("Password must be at least 8 characters.") 
-        
-        # Al menos una letra
-        if not re.search(r'[A-Za-z]', value):
-            raise serializers.ValidationError("Password must contain at least one letter.")
-        
-        # Al menos un numero
-        if not re.search(r'[0-9]', value):
-            raise 
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("El usuario ya existe.")
+        return value
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("El email ya está registrado.")
         return value
 
     def create(self, validated_data):
-        validated_data['password'] = make_password(validated_data['password'])
-        return super().create(validated_data)
+        user = User.objects.create_user(**validated_data)
+        return user
 
+# Serializador de inicio de seccion
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True)
