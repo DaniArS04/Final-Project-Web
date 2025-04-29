@@ -9,7 +9,7 @@ from App.models import User, Card
 from .serializers import UserSerializer, CardSerializer, CategorySerializer, SignUpSerializer, LoginSerializer, UserLoginSerializer
 
 # Maneja la obtencion de todas las cartas a traves de una solicitud GET: http://127.0.0.1:8000/api/cards/flashcards/
-class FlashcardListView(View):
+class FlashcardListView(APIView):
     def get(self, request):
         try:
             flashcards = Card.objects.all().values(
@@ -71,9 +71,9 @@ class SignupView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# Maneja el inicio de seccion del usuario a traves de una solicitud GET: http://127.0.0.1:8000/api/users/login/
+# Maneja el inicio de seccion del usuario a traves de una solicitud POST: http://127.0.0.1:8000/api/users/login/
 class LoginView(APIView):
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data["user"]
@@ -125,7 +125,7 @@ class DeleteUserView(APIView):
         
 
 # Maneja la creacion de cartas a traves de una solicitud POST http://127.0.0.1:8000/api/cards/create/
-class CardCreateView(generics.CreateAPIView):
+class CardCreateView(APIView):
     queryset = Card.objects.all()
     serializer_class = CardSerializer
     permission_classes = [permissions.IsAuthenticated]  # Solo usuarios autenticados
