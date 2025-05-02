@@ -1,5 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
+
+class User(AbstractUser):
+    first_name = models.CharField(max_length=150, verbose_name='Name', blank=True, null=True)
+    last_name = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
+
+    def __str__(self):
+        return self.username
 
 
 class Category(models.Model):
@@ -22,16 +31,17 @@ class Card(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE) # si se elimina una categoria se eliminan las tarjetas asociadas a ella
     owner = models.ForeignKey('User', on_delete=models.CASCADE, related_name='cards', default=1)
 
+
     def __str__(self):
         return self.question
 
 
-class User(AbstractUser):
-    first_name = models.CharField(max_length=150, verbose_name='Name', blank=True, null=True)
-    last_name = models.CharField(max_length=150)
-    email = models.EmailField(unique=True)
+User = get_user_model()
+class Favorite(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites')
+    card = models.ForeignKey('Card', on_delete=models.CASCADE, related_name='favorited_by')
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.username
-
+    class Meta:
+        unique_together = ('user', 'card')
 

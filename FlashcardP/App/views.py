@@ -2,13 +2,14 @@
 from django.forms import ValidationError
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
+from rest_framework.generics import ListCreateAPIView, UpdateAPIView, ListAPIView
 from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from App.models import User, Card
-from .serializers import  CardSerializer, UserLoginSerializer, SignupSerializer
+from App.models import User, Card, Favorite
+from .serializers import  CardSerializer, UserLoginSerializer, SignupSerializer, CardUpdateSerializer, CardDeleteSerializer
 
-# Maneja la obtencion de todas las cartas a traves de una solicitud GET: http://127.0.0.1:8000/api/auth/flashcards/
+# Maneja la obtencion de todas las cartas a traves de una solicitud GET: http://127.0.0.1:8000/api/cards/flashcards/
 class FlashcardListView(APIView):
     def get(self, request):
         try:
@@ -29,6 +30,7 @@ class FlashcardListView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+#-------------------------Todas las vistas relacionadas con el user-----------------------------------------------#
 # Maneja el registro de usuarios a traves de una solicitud POST: http://127.0.0.1:8000/api/auth/signup/
 class SignupView(APIView):
     def post(self, request, *args, **kwargs):
@@ -56,6 +58,29 @@ class SignupView(APIView):
             'error': 'Validation error',
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+    
+# Maneja una solicitud POST donde se separa el nombre del apellido para agg en la BD: http://127.0.0.1:8000/api/auth/validate-name/ 
+def process_full_name(full_name):
+    name_parts = full_name.split(" ", 1)  # Separa solo en el primer espacio
+    first_name = name_parts[0]
+    last_name = name_parts[1] if len(name_parts) > 1 else ""  # Si no hay apellido, se deja vacio
+    return first_name, last_name
+
+class ValidateCompleteNameView(APIView):
+    def post(self, request, *args, **kwargs):
+        complete_name = request.data.get("complete_name", "").strip()
+
+        if not complete_name:
+            return Response({"error": "Complete name is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        first_name, last_name = process_full_name(complete_name)
+
+        return Response({
+            "message": "Successful validation",
+            "name": first_name,
+            "last_name": last_name
+        }, status=status.HTTP_200_OK)
+
 
 # Maneja el inicio de seccion del usuario a traves de una solicitud POST: http://127.0.0.1:8000/api/auth/login/
 class LoginView(APIView):
@@ -77,28 +102,6 @@ class LoginView(APIView):
         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def process_full_name(full_name):
-    name_parts = full_name.split(" ", 1)  # Separa solo en el primer espacio
-    name = name_parts[0]
-    last_name = name_parts[1] if len(name_parts) > 1 else ""  # Si no hay apellido, se deja vacio
-    return name, last_name
-
-# Maneja una solicitud POST donde se separa el nombre del apellido para agg en la BD: http://127.0.0.1:8000/api/users/validate-name/ 
-class ValidateCompleteNameView(APIView):
-    def post(self, request, *args, **kwargs):
-        complete_name = request.data.get("complete_name", "").strip()
-
-        if not complete_name:
-            return Response({"error": "Complete name is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        name, last_name = process_full_name(complete_name)
-
-        return Response({
-            "message": "Successful validation",
-            "name": name,
-            "last_name": last_name
-        }, status=status.HTTP_200_OK)
-
 # Maneja la eliminacion de un usuario a traves de una solicitud DELETE: http://127.0.0.1:8000/api/users/delete-user/
 class DeleteUserView(APIView):
     def delete(self, request, username):
@@ -110,12 +113,95 @@ class DeleteUserView(APIView):
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         
 
-# Maneja la creacion de cartas a traves de una solicitud POST http://127.0.0.1:8000/api/cards/create/
-class CardCreateView(APIView):
-    queryset = Card.objects.all()
+#-------------------------Todas las vistas relacionadas con las Cards-----------------------------------------------#
+# Maneja la creacion de cartas a traves de una solicitud POST http://127.0.0.1:8000/api/auth/create/
+class CardCreateListView(ListCreateAPIView):
     serializer_class = CardSerializer
-    permission_classes = [permissions.IsAuthenticated]  # Solo usuarios autenticados
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    # Asigna automaticamente el owner como el usuario actual
+    def get_queryset(self):
+        return Card.objects.filter(owner=self.request.user)
+
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if not queryset.exists():
+            return Response(
+                {"detail": "No cards available for this user."},
+                status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# Maneja la solicitud de actualizacion de cards a traves de una solicitud UPDATE: http://127.0.0.1:8000/api/auth/<int:pk>/
+class CardUpdateView(UpdateAPIView):
+    serializer_class = CardUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'pk'  # Usa 'pk' para buscar por primary key
+
+    def get_queryset(self):
+        # Permite actualizar solo las tarjetas del usuario
+        return Card.objects.filter(owner=self.request.user)
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+
+            if getattr(instance, '_prefetched_objects_cache', None):
+
+                instance._prefetched_objects_cache = {}
+
+            return Response({
+                'message': 'Card updated successfully',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# Maneja la solicitud de eliminacion de cards a traves de una solicitud DELETE: http://127.0.0.1:8000/api/auth/<int:pk>/
+class CardDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        serializer = CardDeleteSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        card_id = serializer.validated_data['card_id']
+
+        card = Card.objects.get(id=card_id, owner=request.user)
+        card.delete()
+        return Response({"detail": "Card deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+    
+#--------------------------Todos las vistas relacionadas con Favoritos----------------------------------------#
+# Maneja la solicitud de agregar/quitar favoritos a traves de una solicitud POST/DELETE: http://127.0.0.1:8000/api/auth/<int:pk>/
+class FavoriteCardView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, card_id):
+        card = Card.objects.get(pk=card_id)
+        favorite, created = Favorite.objects.get_or_create(user=request.user, card=card)
+        if created:
+            return Response({'detail': 'Card added to favorites.'}, status=status.HTTP_201_CREATED)
+        return Response({'detail': 'Card already in favorites.'}, status=status.HTTP_200_OK)
+
+    def delete(self, request, card_id):
+        try:
+            favorite = Favorite.objects.get(user=request.user, card_id=card_id)
+            favorite.delete()
+            return Response({'detail': 'Card removed from favorites.'}, status=status.HTTP_204_NO_CONTENT)
+        except Favorite.DoesNotExist:
+            return Response({'detail': 'Card not in favorites.'}, status=status.HTTP_404_NOT_FOUND)
+        
+# Maneja la solicitud de obtener todas las cards marcadas como favoritas a traves de una solicitud GET: http://127.0.0.1:8000/api/cards/favorites/
+class FavoriteListView(ListAPIView):
+    serializer_class = CardSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Card.objects.filter(favorited_by__user=self.request.user)
+
