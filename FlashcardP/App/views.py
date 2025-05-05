@@ -2,12 +2,12 @@
 from django.forms import ValidationError
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
-from rest_framework.generics import ListCreateAPIView, UpdateAPIView, ListAPIView
-from rest_framework import status, permissions
+from rest_framework.generics import ListCreateAPIView, UpdateAPIView, ListAPIView, CreateAPIView
+from rest_framework import status, permissions, generics
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from App.models import User, Card, Favorite
-from .serializers import  CardSerializer, UserLoginSerializer, SignupSerializer, CardUpdateSerializer, CardDeleteSerializer
+from App.models import User, Card, Category, Favorite
+from .serializers import  UserSerializer, CardSerializer, UserLoginSerializer, CategorySerializer, SignupSerializer, CardUpdateSerializer, CardDeleteSerializer
 
 # Maneja la obtencion de todas las cartas de el user auntenticado a traves de una solicitud GET: http://127.0.0.1:8000/api/auth/flashcards/
 class FlashcardListView(APIView):
@@ -101,7 +101,13 @@ class LoginView(APIView):
             }, status=status.HTTP_200_OK)
         
         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+# Maneja la obtencion de el username de user autenticado
+class CurrentUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get(self, request):
+        return Response({'username': request.user.username})
 
 # Maneja la eliminacion de un usuario a traves de una solicitud DELETE: http://127.0.0.1:8000/api/users/delete-user/
 class DeleteUserView(APIView):
@@ -117,6 +123,7 @@ class DeleteUserView(APIView):
 
 #-------------------------Todas las vistas relacionadas con las Cards-----------------------------------------------#
 # Maneja la creacion de cartas a traves de una solicitud POST http://127.0.0.1:8000/api/auth/create/
+
 class CardCreateListView(ListCreateAPIView):
     serializer_class = CardSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -136,12 +143,46 @@ class CardCreateListView(ListCreateAPIView):
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+#-------------------------Todas las vistas relacionadas con las Categories dentro de las Cards-------------------------------------------#
+# Maneja la solicitud de obtener todas las categorias existentes a traves de un POST http://127.0.0.1:8000/api/auth/
+class CardCreateListView(ListCreateAPIView):
+    serializer_class = CardSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        return Card.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if not queryset.exists():
+            return Response(
+                {"detail": "No cards available for this user."},
+                status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+# Maneja la muestra de todas las categorias a traves de una solicitud GET http://127.0.0.1:8000/api/auth/ 
+class CategoryListView(ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+# Maneja la creacion de una nueva categoria a traves de una solicitud POST http://127.0.0.1:8000/api/auth/
+class CategoryCreateView(CreateAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.IsAuthenticated] 
 
 # Maneja la solicitud de actualizacion de cards a traves de una solicitud UPDATE: http://127.0.0.1:8000/api/auth/<int:pk>/
 class CardUpdateView(UpdateAPIView):
     serializer_class = CardUpdateSerializer
     permission_classes = [permissions.IsAuthenticated]
-    lookup_field = 'pk'  # Usa 'pk' para buscar por primary key
+    lookup_field = 'pk'  
 
     def get_queryset(self):
         # Permite actualizar solo las tarjetas del usuario

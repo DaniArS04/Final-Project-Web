@@ -14,10 +14,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 class CardSerializer(serializers.ModelSerializer):
     owner = UserSerializer(read_only=True)
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
 
     class Meta:
         model = Card
         fields = '__all__'
+        read_only_fields = ['id', 'owner']
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -66,6 +68,13 @@ class UserLoginSerializer(serializers.Serializer):
 
         data["user"] = user
         return data
+
+
+class CategoryCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name']
+
 
 # Serializador para la actualizacion de cards
 class CardUpdateSerializer(serializers.Serializer):
