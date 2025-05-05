@@ -11,12 +11,12 @@ urlpatterns = [
     path('api/auth/signup/', SignupView.as_view(), name='signup'), # url para la solicitud de registro de usuario
     path('api/auth/validate-name/', ValidateCompleteNameView.as_view(), name='validate_complete_name'), # url para la union del nombre y apellido de el registro
     path('api/auth/delete-user/<str:username>/', DeleteUserView.as_view(), name='delete_user'), # url para la solicitud de eliminacion de usuario
-    path('api/cards/flashcards/', FlashcardListView.as_view(), name='flashcards-list'), # url para la solicitud de obtener todas las cartas 
+    path('api/auth/flashcards/', FlashcardListView.as_view(), name='flashcards-list'), # url para la solicitud de obtener todas las cartas 
     path('api/auth/create-card/', CardCreateListView.as_view(), name='card-create'), # url para la soliciyud de crear una nueva carta
     path('api/auth/<int:pk>/', CardUpdateView.as_view(), name='card-update'), # url para la solicitud de actualizacion de cards
     path('api/auth/delete/', CardDeleteView.as_view(), name='card-delete'), # url para la solicitud de eliminacion de cards
     path('api/auth/<int:card_id>/favorite/', FavoriteCardView.as_view(), name='card-favorite'), # url para la solicitud de agg/quitar favoritos
-    path('cards/favorites/', FavoriteListView.as_view(), name='favorite-list'), # url para la solicitud de obtener las cards favoritas
+    path('api/auth/cards/favorites/', FavoriteListView.as_view(), name='favorite-list'), # url para la solicitud de obtener las cards favoritas
 
 ]
 

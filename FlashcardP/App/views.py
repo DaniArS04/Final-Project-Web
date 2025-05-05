@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from App.models import User, Card, Favorite
 from .serializers import  CardSerializer, UserLoginSerializer, SignupSerializer, CardUpdateSerializer, CardDeleteSerializer
 
-# Maneja la obtencion de todas las cartas de el user auntenticado a traves de una solicitud GET: http://127.0.0.1:8000/api/cards/flashcards/
+# Maneja la obtencion de todas las cartas de el user auntenticado a traves de una solicitud GET: http://127.0.0.1:8000/api/auth/flashcards/
 class FlashcardListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     def get(self, request):
