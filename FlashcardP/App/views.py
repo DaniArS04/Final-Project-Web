@@ -105,9 +105,10 @@ class LoginView(APIView):
 
 # Maneja la eliminacion de un usuario a traves de una solicitud DELETE: http://127.0.0.1:8000/api/users/delete-user/
 class DeleteUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     def delete(self, request, username):
         try:
-            user = User.objects.get(pk=username)
+            user = User.objects.get(username=username)
             user.delete()
             return Response({'message': 'User successfully removed..'}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
