@@ -1,4 +1,5 @@
 
+from django.shortcuts import get_object_or_404
 from django.forms import ValidationError
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
@@ -182,30 +183,25 @@ class CategoryCreateView(CreateAPIView):
 class CardUpdateView(UpdateAPIView):
     serializer_class = CardUpdateSerializer
     permission_classes = [permissions.IsAuthenticated]
-    lookup_field = 'pk'  
+    lookup_field = 'pk'
 
     def get_queryset(self):
-        # Permite actualizar solo las tarjetas del usuario
         return Card.objects.filter(owner=self.request.user)
-    
+
     def update(self, request, *args, **kwargs):
-        try:
-            partial = kwargs.pop('partial', False)
-            instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
 
-            if getattr(instance, '_prefetched_objects_cache', None):
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
 
-                instance._prefetched_objects_cache = {}
-
-            return Response({
-                'message': 'Card updated successfully',
-                'data': serializer.data
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({
+            'message': 'Card updated successfully',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
 
 # Maneja la solicitud de eliminacion de cards a traves de una solicitud DELETE: http://127.0.0.1:8000/api/auth/<int:pk>/
 class CardDeleteView(APIView):
@@ -216,10 +212,11 @@ class CardDeleteView(APIView):
         serializer.is_valid(raise_exception=True)
         card_id = serializer.validated_data['card_id']
 
-        card = Card.objects.get(id=card_id, owner=request.user)
+        # Usa get_object_or_404 para manejar el error si no existe
+        card = get_object_or_404(Card, id=card_id, owner=request.user)
         card.delete()
         return Response({"detail": "Card deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-    
+
 #--------------------------Todos las vistas relacionadas con Favoritos----------------------------------------#
 # Maneja la solicitud de agregar/quitar favoritos a traves de una solicitud POST/DELETE: http://127.0.0.1:8000/api/auth/<int:pk>/
 class FavoriteCardView(APIView):
