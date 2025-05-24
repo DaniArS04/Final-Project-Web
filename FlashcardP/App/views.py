@@ -169,10 +169,17 @@ class CardCreateListView(ListCreateAPIView):
 
 # Maneja la muestra de todas las categorias a traves de una solicitud GET http://127.0.0.1:8000/api/auth/ 
 class CategoryListView(ListAPIView):
-    queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            # Filtra solo las categorias creadas por el usuario actual
+            return Category.objects.filter(user=user)
+        # Si el usuario no esta autenticado, retorna un queryset vacio
+        return Category.objects.none()
+    
 # Maneja la creacion de una nueva categoria a traves de una solicitud POST http://127.0.0.1:8000/api/auth/
 class CategoryCreateView(CreateAPIView):
     queryset = Category.objects.all()
@@ -207,15 +214,24 @@ class CardUpdateView(UpdateAPIView):
 class CardDeleteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def delete(self, request, *args, **kwargs):
-        serializer = CardDeleteSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        card_id = serializer.validated_data['card_id']
-
-        # Usa get_object_or_404 para manejar el error si no existe
+    def delete(self, request, card_id, *args, **kwargs): 
         card = get_object_or_404(Card, id=card_id, owner=request.user)
         card.delete()
         return Response({"detail": "Card deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+# Maneja la solicitud de obtener todas las categorias(una card por categoria)
+class CategoryListView(ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+# Maneja la solicitud de listar todos los Elementos de una Categoría
+class CardByCategoryListView(ListAPIView):
+    serializer_class = CardSerializer
+
+    def get_queryset(self):
+        category_id = self.kwargs.get('category_id')
+        return Card.objects.filter(category_id=category_id)
+    
 
 #--------------------------Todos las vistas relacionadas con Favoritos----------------------------------------#
 # Maneja la solicitud de agregar/quitar favoritos a traves de una solicitud POST/DELETE: http://127.0.0.1:8000/api/auth/<int:pk>/

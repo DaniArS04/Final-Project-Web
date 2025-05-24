@@ -2,7 +2,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from App.views import FlashcardListView, LoginView, SignupView, ValidateCompleteNameView, DeleteUserView
-from App.views import  CardCreateListView, CategoryListView, CategoryCreateView, CardUpdateView, CardDeleteView, FavoriteCardView, FavoriteListView
+from App.views import  CardCreateListView, CategoryListView, CategoryCreateView, CardUpdateView, CardDeleteView, FavoriteCardView, FavoriteListView, CardByCategoryListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -15,10 +15,11 @@ urlpatterns = [
     path('api/auth/create-card/', CardCreateListView.as_view(), name='card-create'), # url para la solicitud de crear una nueva carta
     path('api/auth/categories/', CategoryListView.as_view(), name='category-list'), # url para la solicitud de listar categorías existentes
     path('api/auth/<int:pk>/', CardUpdateView.as_view(), name='card-update'), # url para la solicitud de actualizacion de cards
-    path('api/auth/delete/', CardDeleteView.as_view(), name='card-delete'), # url para la solicitud de eliminacion de cards
+    path('api/auth/<int:card_id>/delete/', CardDeleteView.as_view(), name='card-delete'), # url para la solicitud de eliminacion de cards
     path('api/auth/<int:card_id>/favorite/', FavoriteCardView.as_view(), name='card-favorite'), # url para la solicitud de agg/quitar favoritos
     path('api/auth/favorites/', FavoriteListView.as_view(), name='favorite-list'), # url para la solicitud de obtener las cards favoritas
-    path('categories/add/', CategoryCreateView.as_view(), name='category-add'), # url para la solicitud de crear una nueva categoría
-    
+    path('api/auth/add/', CategoryCreateView.as_view(), name='category-add'), # url para la solicitud de crear una nueva categoría
+    path('api/auth/categories/', CategoryListView.as_view(), name='category-list'),
+    path('api/auth/<int:category_id>/cards/', CardByCategoryListView.as_view(), name='cards-by-category'),
 ]
 
