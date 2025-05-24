@@ -186,6 +186,10 @@ class CategoryCreateView(CreateAPIView):
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticated] 
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+        
+
 # Maneja la solicitud de actualizacion de cards a traves de una solicitud UPDATE: http://127.0.0.1:8000/api/auth/<int:pk>/
 class CardUpdateView(UpdateAPIView):
     serializer_class = CardUpdateSerializer
@@ -215,7 +219,7 @@ class CardDeleteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, card_id, *args, **kwargs): 
-        card = get_object_or_404(Card, id=card_id, owner=request.user)
+        card = get_object_or_404(Card, card_id=card_id, owner=request.user)
         card.delete()
         return Response({"detail": "Card deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
