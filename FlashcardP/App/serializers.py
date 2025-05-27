@@ -86,7 +86,7 @@ class CardUpdateSerializer(serializers.Serializer):
         ('intermediate', 'Intermediate'),
         ('hard', 'Hard'),
     ], required=False)
-    category = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=False)
 
     def update(self, instance, validated_data):
         instance.question = validated_data.get('question', instance.question)
@@ -109,3 +109,27 @@ class CardDeleteSerializer(serializers.Serializer):
             raise serializers.ValidationError("Card not found or you do not have permission to delete it.")
         return value
 
+# serializer para cambiar contrasena
+
+class ChangeUserSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    current_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=False, allow_blank=True)
+    new_password_confirm = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("The current password is incorrect.")
+        return value
+
+    def validate(self, data):
+        new_pass = data.get('new_password')
+        new_pass_confirm = data.get('new_password_confirm')
+
+        if new_pass or new_pass_confirm:
+            if new_pass != new_pass_confirm:
+                raise serializers.ValidationError({"new_password_confirm": "New passwords don't match."})
+            validate_password(new_pass, self.context['request'].user)
+
+        return data

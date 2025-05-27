@@ -8,7 +8,7 @@ from rest_framework import status, permissions, generics
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from App.models import User, Card, Category, Favorite
-from .serializers import  UserSerializer, CardSerializer, UserLoginSerializer, CategorySerializer, SignupSerializer, CardUpdateSerializer, CardDeleteSerializer
+from .serializers import  UserSerializer, CardSerializer, UserLoginSerializer, CategorySerializer, SignupSerializer, CardUpdateSerializer, ChangeUserSerializer
 
 # Maneja la obtencion de todas las cartas de el user auntenticado a traves de una solicitud GET: http://127.0.0.1:8000/api/auth/flashcards/
 class FlashcardListView(APIView):
@@ -113,14 +113,32 @@ class CurrentUserView(APIView):
 # Maneja la eliminacion de un usuario a traves de una solicitud DELETE: http://127.0.0.1:8000/api/users/delete-user/
 class DeleteUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    def delete(self, request, username):
+    def delete(self, request):
         try:
-            user = User.objects.get(username=username)
+            user = request.user
             user.delete()
             return Response({'message': 'User successfully removed..'}, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+
+# Actualizacion de datos del user
+class ChangeUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request):
+        serializer = ChangeUserSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            user = request.user
+            user.username = serializer.validated_data['username']
+
+            new_password = serializer.validated_data.get('new_password')
+            if new_password:
+                user.set_password(new_password)
+
+            user.save()
+            return Response({"detail": "User updated correctly."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 #-------------------------Todas las vistas relacionadas con las Cards-----------------------------------------------#
 # Maneja la creacion de cartas a traves de una solicitud POST http://127.0.0.1:8000/api/auth/create/
@@ -235,7 +253,21 @@ class CardByCategoryListView(ListAPIView):
     def get_queryset(self):
         category_id = self.kwargs.get('category_id')
         return Card.objects.filter(category_id=category_id)
-    
+
+# Maneja la solicitud de filtrar categoria y dificultad 
+class CardCategoryListView(ListAPIView):
+    serializer_class = CardSerializer
+
+    def get_queryset(self):
+        queryset = Card.objects.all()
+        category_id = self.kwargs.get('category_id')  # Se obtiene de la URL
+        difficulty = self.request.query_params.get('difficulty')  # Se obtiene de los parámetros GET
+
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)  # Filtra por categoría
+        if difficulty:
+            queryset = queryset.filter(difficulty__iexact=difficulty)  # Filtra por dificultad (case-insensitive)
+        return queryset
 
 #--------------------------Todos las vistas relacionadas con Favoritos----------------------------------------#
 # Maneja la solicitud de agregar/quitar favoritos a traves de una solicitud POST/DELETE: http://127.0.0.1:8000/api/auth/<int:pk>/
