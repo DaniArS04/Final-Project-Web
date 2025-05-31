@@ -1,14 +1,13 @@
 
 from django.shortcuts import get_object_or_404
 from django.forms import ValidationError
-from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView, ListAPIView, CreateAPIView
 from rest_framework import status, permissions, generics
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from App.models import User, Card, Category, Favorite
-from .serializers import  UserSerializer, CardSerializer, UserLoginSerializer, CategorySerializer, SignupSerializer, CardUpdateSerializer, ChangeUserSerializer
+from App.models import  Card, Category, Favorite, UserCardProgress
+from .serializers import  CardSerializer, UserLoginSerializer, CategorySerializer, SignupSerializer, CardUpdateSerializer, ChangeUserSerializer, ProgresoSerializer
 
 # Maneja la obtencion de todas las cartas de el user auntenticado a traves de una solicitud GET: http://127.0.0.1:8000/api/auth/flashcards/
 class FlashcardListView(APIView):
@@ -140,6 +139,33 @@ class ChangeUserView(APIView):
             return Response({"detail": "User updated correctly."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# Maneja la solicitud de actualizacion de el progreso de el user
+class ProgresoCardView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ProgresoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        card_id = serializer.validated_data['card_id']
+        accion = serializer.validated_data['accion']
+        user = request.user
+
+        obj, created = UserCardProgress.objects.update_or_create(
+            user=user,
+            card_id=card_id,
+            defaults={'estate': accion}
+        )
+
+        # Calcular totales
+        dominated = UserCardProgress.objects.filter(user=user, estate='dominates').count()
+        not_dominated = UserCardProgress.objects.filter(user=user, estado='does_not_dominates').count()
+
+        return Response({
+            'dominated': dominated,
+            'not_dominates': not_dominated
+        })
+
+
 #-------------------------Todas las vistas relacionadas con las Cards-----------------------------------------------#
 # Maneja la creacion de cartas a traves de una solicitud POST http://127.0.0.1:8000/api/auth/create/
 
@@ -260,11 +286,11 @@ class CardCategoryListView(ListAPIView):
 
     def get_queryset(self):
         queryset = Card.objects.all()
-        category_id = self.kwargs.get('category_id')  # Se obtiene de la URL
+        category_name = self.kwargs.get('category_name')  # Se obtiene de la URL
         difficulty = self.request.query_params.get('difficulty')  # Se obtiene de los parámetros GET
 
-        if category_id:
-            queryset = queryset.filter(category_id=category_id)  # Filtra por categoría
+        if category_name:
+            queryset = queryset.filter(category_name=category_name)  # Filtra por categoría
         if difficulty:
             queryset = queryset.filter(difficulty__iexact=difficulty)  # Filtra por dificultad (case-insensitive)
         return queryset

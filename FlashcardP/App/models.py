@@ -13,6 +13,7 @@ class User(AbstractUser):
 
 class Category(models.Model):
     category_name = models.CharField(max_length=100, primary_key=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
 
     def __str__(self):
         return self.category_name
@@ -45,3 +46,10 @@ class Favorite(models.Model):
     class Meta:
         unique_together = ('user', 'card')
 
+class UserCardProgress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
+    card_id = models.IntegerField()
+    state = models.CharField(max_length=20, choices=[('dominates', 'Dominates'), ('does_not_dominate', 'Does_not_Dominate')])
+
+    class Meta:
+        unique_together = ('user', 'card_id')

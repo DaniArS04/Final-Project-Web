@@ -133,3 +133,8 @@ class ChangeUserSerializer(serializers.Serializer):
             validate_password(new_pass, self.context['request'].user)
 
         return data
+    
+# Serializer para el progreso de el user
+class ProgresoSerializer(serializers.Serializer):
+    card_id = serializers.IntegerField()
+    accion = serializers.ChoiceField(choices=['dominates', 'does_not_dominate'])
