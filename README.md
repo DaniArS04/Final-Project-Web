@@ -23,7 +23,7 @@ El objetivo principal es ofrecer una herramienta flexible y escalable que combin
 
  * Almacenamiento estructurado: base de datos relacional para manejar usuarios, tarjetas, categorías y dificultad.
 
- * Arquitectura modular: separación clara entre modelos, vistas y lógica de negocio.
+ * Arquitectura modular: separación clara entre modelos, vistas y lógica de negocio.(Arquitectura DDD)
 
  * Diseño escalable: preparado para integrar nuevas funcionalidades (como repaso espaciado, ranking o gamificación).
 
@@ -42,7 +42,7 @@ El objetivo principal es ofrecer una herramienta flexible y escalable que combin
 
 * Control de versiones: Git + GitHub
 
-* Dependencias gestionadas con: pip y archivo requirements.txt
+* Dependencias gestionadas con: archivo requirements.txt
 
 ## Autor
 Desarrollado por Dani (https://github.com/DaniArS04)
@@ -53,6 +53,7 @@ Gmail: danielisvrojassanchez06@gmail.com
 
 ```bash
 git clone https://github.com/DaniArS04/Final-Project-Web.git
+
 
 
 
